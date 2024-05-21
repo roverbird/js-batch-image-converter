@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Batch Image Converter, free, no registration!</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">Batch Image Converter, free, no registration!</h1>
+            <p class="subtitle">Reusable JS-only image converter, no data collected or stored.</p>
+            <p class="subtitle"><a href="https://github.com/roverbird/superdash">Help</a> | <a href="https://textvisualization.app">More tools</a> </p>
+       </div>
+<br>
+<!-- input webform starts -->
+<div class="container">
+
+<!-- Form HTML -->
+<form id="yamlForm" class="box">
+    <div class="field">
+        <p class="subtitle">1. Set image size (reload page to reset)</p>
+        <div class="control">
+            <div class="select">
+                <select id="targetWidth" required>
+                    <option value="820" selected>Cover (820)</option>
+                    <option value="1200">Timeline (1200)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="field">
+        <p class="subtitle">2. Set image format (reload page to reset)</p>
+        <div class="control">
+            <div class="select">
+                <select id="targetFormat" required>
+                    <option value="webp" selected>Webp</option>
+                    <option value="jpeg">Jpeg</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <br>
+    <div>
+        <p class="subtitle">3. Upload Images</p>
+        <input type="file" multiple accept="image/*" id="file-input" class="is-hidden">
+        <label for="file-input" class="button is-info">Upload Images</label>
+    </div>
+    <br>
+    <div id="previews" class="columns is-multiline"></div>
+    <div class="control">
+        <button type="button" id="downloadConvertedImages" class="button is-primary">Download Converted Images</button>
+    </div>
+</form>
+
+<br>
+
+<h2 class="title">Why WebP?</h2>
+<p>Google highly recommends using the WebP format for images due to its superior compression capabilities, which result in smaller file sizes while maintaining high quality. This is particularly important for web performance and user experience, as smaller images load faster, reducing the overall load time of web pages.</p>
+<br>
+<h2 class="title">Who Can Benefit from This Tool?</h2>
+
+<p>This tool is especially useful for:</p>
+<br>
+<p>Web Editors and Content Managers: Simplifies the process of converting and resizing images to the preferred WebP or traditional JPEG format, ensuring optimized images for faster website performance.</p>
+<br>
+<p>Social Media Managers: Helps prepare images in the correct size and format for various social media platforms, enhancing the visual appeal and engagement of posts.</p>
+<br>
+<p>Anyone Working with Web Images: Easy workflow for resizing and converting images, making it possible to handle multiple images efficiently.</p>
+<br>
+<p>By using this tool, you can ensure that your images are web-optimized, contributing to better SEO rankings, faster load times, and an improved user experience on your website or social media channels.</p>
+<br>
+<p><a href="https://textvisualization.app/">More tools</a></p>
+<br>
+
+
+<!-- JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+
+<script>
+// Define constants for element references
+const refs = {
+    imagePreviews: document.getElementById('previews'),
+    fileSelector: document.getElementById('file-input'),
+    targetWidthSelector: document.getElementById('targetWidth'),
+    targetFormatSelector: document.getElementById('targetFormat'),
+    modifiedFilenames: []
+};
+
+// Function to add image preview
+function addImagePreview(container, imageURL, filename) {
+    const imageBox = document.createElement("div");
+    imageBox.classList.add("column", "is-one-fifth", "image-box");
+
+    const imgElement = document.createElement("img");
+    imgElement.src = imageURL;
+
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "X";
+    removeButton.classList.add("button", "is-danger", "is-small", "remove-button");
+    removeButton.onclick = function() {
+        removeImage(imageBox, filename);
+    };
+
+    imageBox.appendChild(imgElement);
+    imageBox.appendChild(removeButton);
+    container.appendChild(imageBox);
+
+    refs.modifiedFilenames.push(filename);
+}
+
+// Function to remove image
+function removeImage(imageBox, filename) {
+    imageBox.remove();
+    refs.modifiedFilenames = refs.modifiedFilenames.filter(name => name !== filename);
+    if (refs.modifiedFilenames.length === 0) {
+        enableFormElements();
+    }
+}
+
+// Function to disable form elements
+function disableFormElements() {
+    refs.targetWidthSelector.disabled = true;
+    refs.targetFormatSelector.disabled = true;
+}
+
+// Function to enable form elements
+function enableFormElements() {
+    refs.targetWidthSelector.disabled = false;
+    refs.targetFormatSelector.disabled = false;
+}
+
+// Function to process image file
+function processFile(file) {
+    if (!file) return;
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}-IMG-${Math.floor(Math.random() * 10000).toString().padStart(5, '0')}`;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const imageURL = event.target.result;
+        const filename = `${timestamp}.${refs.targetFormatSelector.value}`; // Use target format
+
+        const tempImg = new Image();
+        tempImg.src = imageURL;
+        tempImg.onload = function() {
+            const targetWidth = parseInt(refs.targetWidthSelector.value);
+            const targetHeight = (targetWidth / tempImg.width) * tempImg.height;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+
+            ctx.drawImage(tempImg, 0, 0, targetWidth, targetHeight);
+
+            const imageType = refs.targetFormatSelector.value === 'jpeg' ? 'image/jpeg' : 'image/webp'; // Determine image type
+            canvas.toBlob(blob => {
+                addImagePreview(refs.imagePreviews, URL.createObjectURL(blob), filename);
+            }, imageType);
+        };
+    };
+    reader.readAsDataURL(file);
+}
+
+// Function to process files
+function processFiles(files) {
+    if (files.length > 0) {
+        disableFormElements();
+    }
+    for (const file of files) {
+        processFile(file);
+    }
+}
+
+// Event listener for file input change
+refs.fileSelector.addEventListener("change", function () {
+    processFiles(refs.fileSelector.files);
+    refs.fileSelector.value = "";
+});
+
+// Event listeners for targetWidth and targetFormat change
+refs.targetWidthSelector.addEventListener("change", function () {
+    processFiles(refs.fileSelector.files);
+});
+
+refs.targetFormatSelector.addEventListener("change", function () {
+    processFiles(refs.fileSelector.files);
+});
+
+// Function to download converted images
+function downloadConvertedImages() {
+    const filenamePaket = `paket-${Date.now()}`;
+
+    // Create a zip file
+    const zip = new JSZip();
+
+    // Add images
+    const getImageData = async (imgElement) => {
+        return new Promise((resolve, reject) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = function () {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob(resolve, img.src.includes('jpeg') ? 'image/jpeg' : 'image/webp');
+            };
+            img.onerror = reject;
+            img.src = imgElement.src;
+        });
+    };
+
+    const imagePromises = Array.from(document.querySelectorAll('#previews img')).map(img => getImageData(img));
+    Promise.all(imagePromises)
+        .then(imageBlobs => {
+            imageBlobs.forEach((blob, index) => {
+                const filename = refs.modifiedFilenames[index];
+                zip.file(filename, blob, { binary: true });
+            });
+
+            // Generate zip content and trigger download
+            zip.generateAsync({ type: "blob" }).then(content => {
+                saveAs(content, `${filenamePaket}.zip`);
+            }).catch(error => {
+                console.error('Error generating zip content:', error);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching images:', error);
+        });
+}
+
+// Event listener for "Download Converted Images" button
+document.getElementById('downloadConvertedImages').addEventListener('click', function(event) {
+    event.preventDefault();
+    downloadConvertedImages();
+});
+</script>
+
+<!-- Optional: CSS for better styling of remove button -->
+<style>
+.image-box {
+    position: relative;
+}
+.remove-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+</style>
+
+
+
+
+</body>
+</html>
+
