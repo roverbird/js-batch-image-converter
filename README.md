@@ -6,6 +6,9 @@ Javascript, client-side processing only!
 
 [Live preview](https://textvisualization.app/batch-image-converter/), use as a stand-alone tool or copy the code to integrate code into your workflow! Simply edit the webform / javascript to march image sizes with your specific requirements.
 
+## Check out
+
+[Frelih.org](https://frelih.org/)
 
 ## Features
 
